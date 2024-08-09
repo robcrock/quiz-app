@@ -20,6 +20,15 @@ const config = {
     },
     extend: {
       colors: {
+        purple: "#A729F5", // This is the bright purple color
+        "pure-white": "#FFFFFF", // Pure white
+        "dark-navy": "#313E51", // A very dark blue-grey, almost black
+        "grey-navy": "#626C7F", // A lighter shade of blue-grey
+        "light-grey": "#F4F6FA", // A very light grey, nearly white
+        navy: "#3B4D66", // A medium dark blue-grey
+        "light-bluish": "#ABC1E1", // A very pale, soft blue
+        green: "#26D782", // A bright, vivid green
+        red: "#EE5454", // A bright salmon red
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
