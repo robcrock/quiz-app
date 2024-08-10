@@ -1,4 +1,17 @@
+"use client";
+
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
+import HTMLIcon from "@/../public/images/icon-html.svg";
+import { Trash } from "lucide-react";
+import { QUIZ_DATA } from "@/data/data";
+
+const MyTrash = () => {
+  return <Trash className="h-14 w-14 rounded-lg bg-slate-200 p-2" />;
+};
+
+const quizes = QUIZ_DATA.quizzes.map((quiz) => quiz.title);
 
 export default function Home() {
   return (
@@ -8,6 +21,21 @@ export default function Home() {
         <div className="flex flex-col">
           <div>Button</div>
           <Button>Button Idle</Button>
+        </div>
+        <div className="flex w-[564px] flex-col">
+          <div>Radio Group</div>
+          <ButtonGroup defaultValue="option1">
+            {quizes.map((quiz) => {
+              return (
+                <ButtonGroupItem
+                  key={quiz}
+                  icon={<MyTrash />}
+                  label={quiz}
+                  value={quiz}
+                />
+              );
+            })}
+          </ButtonGroup>
         </div>
       </div>
       <div>

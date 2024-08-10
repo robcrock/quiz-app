@@ -20,13 +20,14 @@ const config = {
     },
     extend: {
       colors: {
-        purple: "#A729F5", // This is the bright purple color
-        "pure-white": "#FFFFFF", // Pure white
-        "dark-navy": "#313E51", // A very dark blue-grey, almost black
-        "grey-navy": "#626C7F", // A lighter shade of blue-grey
-        "light-grey": "#F4F6FA", // A very light grey, nearly white
-        navy: "#3B4D66", // A medium dark blue-grey
-        "light-bluish": "#ABC1E1", // A very pale, soft blue
+        "fem-purple": "#A729F5", // This is the bright purple color
+        "fem-pure-white": "#FFFFFF", // Pure white
+        "fem-dark-navy": "#313E51", // A very dark blue-grey, black
+        "fem-grey-navy": "#626C7F", // A lighter shade of blue-grey
+        "fem-light-grey": "#F4F6FA", // A very light grey, nearly white
+        "fem-navy": "#3B4D66", // A medium dark blue-grey
+        "fem-light-bluish": "#ABC1E1", // A very pale, soft blue
+        "fem-translucent-blue": "#F4F6FA",
         green: "#26D782", // A bright, vivid green
         red: "#EE5454", // A bright salmon red
         border: "hsl(var(--border))",
