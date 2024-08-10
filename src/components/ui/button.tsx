@@ -37,17 +37,36 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  startIcon?: React.ReactNode; // Changed to ReactNode to accept JSX elements
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      startIcon,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     const Comp = asChild ? Slot : "button";
+
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(
+          buttonVariants({ variant, size, className }),
+          "flex w-full justify-start gap-8 p-5 text-fem-dark-navy",
+        )}
         ref={ref}
         {...props}
-      />
+      >
+        {startIcon && startIcon}
+        {children}
+      </Comp>
     );
   },
 );

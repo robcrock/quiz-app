@@ -23,7 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={cn(
-          "min-h-screen bg-background bg-fem-translucent-blue font-rubik antialiased",
+          "bg-custom min-h-screen font-rubik antialiased",
           fontSans.variable,
         )}
       >

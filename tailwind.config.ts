@@ -20,7 +20,14 @@ const config = {
     },
     extend: {
       colors: {
+        "fem-orange": "#FF7E35",
+        "fem-soft-orange": "#FFF1E9",
+        "fem-green": "#2FD887",
+        "fem-soft-green": "#E0FDEF",
+        "fem-blue": "#306AFF",
+        "fem-soft-blue": "#EBF0FF",
         "fem-purple": "#A729F5", // This is the bright purple color
+        "fem-soft-purple": "#F6E7FF",
         "fem-pure-white": "#FFFFFF", // Pure white
         "fem-dark-navy": "#313E51", // A very dark blue-grey, black
         "fem-grey-navy": "#626C7F", // A lighter shade of blue-grey

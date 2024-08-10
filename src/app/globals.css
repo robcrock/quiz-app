@@ -67,3 +67,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+.bg-custom {
+  background-color: hsl(220, 37%, 97%);
+  background-image: url("/images/pattern-background-desktop-light.svg");
+  background-repeat: no-repeat;
+  background-position: right 0vw bottom 0vh left 0vw top 0vh;
+}
