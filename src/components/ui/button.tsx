@@ -19,7 +19,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         option:
-          "text-primary underline-offset-4 hover:underline flex w-full justify-start gap-8 bg-fem-pure-white text-fem-dark-navy",
+          "flex w-full justify-start gap-8 bg-fem-pure-white text-fem-dark-navy",
       },
       size: {
         default: "p-8",
