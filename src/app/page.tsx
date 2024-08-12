@@ -14,21 +14,77 @@ import { cn } from "@/lib/utils";
 //   (quiz) => quiz.title === "HTML",
 // )[0];
 
-// console.log("htmlQuestions", htmlQuestions.questions);
+const question = {
+  question: "",
+  choice: "",
+  answer: "",
+  isAnsweredCorrectly: false,
+};
+
+const DEFAULT_QUIZ_STATE = Array.from({ length: 10 }, () => question);
 
 export default function Home() {
   const [quizSelection, setQuizSelection] = useState({});
+  const [currentChoice, setCurrentChoice] = useState({});
   const [currentPage, setCurrentPage] = useState(0);
+  const [quizState, setQuizState] = useState(DEFAULT_QUIZ_STATE);
+
+  console.log("quizState", quizState);
+  console.log("currentChoice", currentChoice);
 
   const handleQuizSelection = (value: string) => {
     const selectedQuizData = QUIZ_DATA.quizzes.filter((quiz) => {
       return quiz.title === value;
     })[0];
+
     setQuizSelection(selectedQuizData);
+
+    const newQuizState = selectedQuizData.questions.map((quizQuestion) => {
+      return {
+        ...question,
+        question: quizQuestion.question,
+        answer: quizQuestion.answer,
+      };
+    });
+    setQuizState(newQuizState);
+
     setCurrentPage((prev) => prev + 1);
   };
 
-  const handleNextPage = () => {
+  const handleMakeChoice = (
+    question: Record<string, string>,
+    choice: string,
+  ) => {
+    setCurrentChoice({
+      question,
+      choice,
+    });
+  };
+
+  // const handleNextPage = () => {
+  //   setCurrentPage((prev) => prev + 1);
+  // };
+
+  const handleChooseAnswer = (question: string, choice: string) => {
+    console.log("question", question);
+    console.log("choice", choice);
+    setQuizState((prevState) => {
+      const updatedState = prevState.map((state) => {
+        if (state.question === question) {
+          return {
+            ...state,
+            question,
+            choice,
+            isAnsweredCorrectly: state.answer === choice,
+          };
+        } else {
+          return { ...state };
+        }
+      });
+      console.log("updatedState", updatedState);
+      return updatedState;
+    });
+
     setCurrentPage((prev) => prev + 1);
   };
 
@@ -97,12 +153,17 @@ export default function Home() {
               <ButtonGroup defaultValue="option1">
                 {quizSelection.questions[currentPage - 1].options.map(
                   (option, index) => {
+                    const currentQuestion =
+                      quizSelection.questions[currentPage - 1].question;
                     return (
                       <ButtonGroupItem
                         key={option}
                         icon={<OptionIcon index={index} />}
                         label={option}
                         value={option}
+                        onClick={() =>
+                          handleMakeChoice(currentQuestion, option)
+                        }
                       />
                     );
                   },
@@ -114,7 +175,9 @@ export default function Home() {
             <Button
               variant="default"
               className="w-[564px]"
-              onClick={handleNextPage}
+              onClick={() =>
+                handleChooseAnswer(currentChoice.question, currentChoice.choice)
+              }
             >
               Submit Answer
             </Button>
