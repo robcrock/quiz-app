@@ -11,6 +11,8 @@ import SunLightIcon from "@/components/icons/SunLightIcon";
 import MoonLightIcon from "@/components/icons/MoonLightIcon";
 import SunDarkIcon from "@/components/icons/SunDarkIcon";
 import MoonDarkIcon from "@/components/icons/MoonDarkIcon";
+import ErrorIcon from "@/components/icons/ErrorIcon";
+import { cn } from "@/lib/utils";
 
 const question = {
   question: "",
@@ -25,16 +27,20 @@ export default function Home() {
   const [quizSelection, setQuizSelection] = useState({});
   const [currentChoice, setCurrentChoice] = useState({});
   const [currentPage, setCurrentPage] = useState(0);
+  const [isSubmissionError, setIsSubmissionError] = useState(false);
+  // const [isOptionChosen, setIsOptionChosen] = useState(false);
   const [quizState, setQuizState] = useState(DEFAULT_QUIZ_STATE);
   const currentScore = quizState.reduce((acc, curr) => {
     const point = curr.isAnsweredCorrectly ? 1 : 0;
     return acc + point;
   }, 0);
+  const isOptionChosen = Object.keys(currentChoice).length !== 0;
 
   // console.log("currentPage", currentPage);
-  console.log("quizSelection", quizSelection);
-  console.log("quizState", quizState);
-  // console.log("currentChoice", currentChoice);
+  // console.log("quizSelection", quizSelection);
+  // console.log("quizState", quizState);
+  console.log("currentChoice", currentChoice);
+  console.log("isEmpty", Object.keys(currentChoice).length === 0);
 
   const handleQuizSelection = (value: string) => {
     const selectedQuizData = QUIZ_DATA.quizzes.filter((quiz) => {
@@ -63,11 +69,8 @@ export default function Home() {
       question,
       choice,
     });
+    // setIsSubmissionError(!isOptionChosen ? true : false);
   };
-
-  // const handleNextPage = () => {
-  //   setCurrentPage((prev) => prev + 1);
-  // };
 
   const handleChooseAnswer = (question: string, choice: string) => {
     console.log("question", question);
@@ -89,7 +92,10 @@ export default function Home() {
       return updatedState;
     });
 
-    setCurrentPage((prev) => prev + 1);
+    setCurrentPage((prev) => (!isOptionChosen ? prev : prev + 1));
+    // Reset the state
+    setCurrentChoice({});
+    setIsSubmissionError(!isOptionChosen ? true : false);
   };
 
   return (
@@ -193,15 +199,28 @@ export default function Home() {
             </div>
           </section>
           <div className="flex justify-end">
-            <Button
-              variant="default"
-              className="w-[564px]"
-              onClick={() =>
-                handleChooseAnswer(currentChoice.question, currentChoice.choice)
-              }
-            >
-              Submit Answer
-            </Button>
+            <div className="flex flex-col items-center gap-8">
+              <Button
+                variant="default"
+                className="w-[564px]"
+                onClick={() =>
+                  handleChooseAnswer(
+                    currentChoice.question,
+                    currentChoice.choice,
+                  )
+                }
+              >
+                {isOptionChosen ? "Next Question" : "Submit Answer"}
+              </Button>
+              {isSubmissionError && (
+                <div className="flex items-center gap-2">
+                  <ErrorIcon />
+                  <span className="text-2xl text-[#EE5454]">
+                    Please select an answer
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </section>
       )}
@@ -251,9 +270,11 @@ const OptionIcon = ({ index }: { index: number }) => {
 
   return (
     <div
-      className={
-        "flex h-14 w-14 items-center justify-center rounded-lg bg-fem-light-grey text-[28px] font-medium text-fem-grey-navy"
-      }
+      className={cn(
+        "flex h-14 w-14 items-center justify-center rounded-lg bg-fem-light-grey text-[28px] font-medium text-fem-grey-navy",
+        "group-hover:bg-fem-soft-purple group-hover:text-fem-purple",
+        "group-data-[state='checked']:bg-fem-purple group-data-[state='checked']:text-fem-pure-white",
+      )}
     >
       {letterArray[index]}
     </div>
