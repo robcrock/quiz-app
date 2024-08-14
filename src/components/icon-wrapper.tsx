@@ -5,26 +5,26 @@ import HTMLIcon from "@/components/icons/HTMLIcon";
 import JSIcon from "@/components/icons/JSIcon";
 import AccessibilityIcon from "@/components/icons/AccessibilityIcon";
 
-type TIconName = "CSS" | "HTML" | "JS" | "Accessibility";
+export type TIconName = "CSS" | "HTML" | "Javascript" | "Accessibility";
 
 const iconMap: Record<TIconName, ElementType> = {
   CSS: CSSIcon,
   HTML: HTMLIcon,
-  JS: JSIcon,
+  Javascript: JSIcon,
   Accessibility: AccessibilityIcon,
 };
 
 const bgMap = {
   HTML: "bg-fem-soft-orange",
   CSS: "bg-fem-soft-green",
-  JS: "bg-fem-soft-blue",
+  Javascript: "bg-fem-soft-blue",
   Accessibility: "bg-fem-soft-purple",
 };
 
 const textMap = {
   HTML: "text-fem-orange",
   CSS: "text-fem-green",
-  JS: "text-fem-blue",
+  Javascript: "text-fem-blue",
   Accessibility: "text-fem-purple",
 };
 

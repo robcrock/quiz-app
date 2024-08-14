@@ -1,4 +1,22 @@
-export const QUIZ_DATA = {
+import { TIconName } from "@/components/icon-wrapper";
+
+type TQuestion = {
+  question: string;
+  options: string[];
+  answer: string;
+};
+
+export type TQuiz = {
+  title: TIconName;
+  icon: string;
+  questions: TQuestion[];
+};
+
+export type TQuizzes = {
+  quizzes: TQuiz[];
+};
+
+export const QUIZ_DATA: TQuizzes = {
   quizzes: [
     {
       title: "HTML",

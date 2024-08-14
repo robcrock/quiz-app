@@ -3,9 +3,9 @@
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { QUIZ_DATA } from "@/data/data";
+import { QUIZ_DATA, TQuiz, TQuizzes } from "@/data/data";
 import { IconWrapper } from "@/components/icon-wrapper";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
 import SunLightIcon from "@/components/icons/SunLightIcon";
 import MoonLightIcon from "@/components/icons/MoonLightIcon";
@@ -21,33 +21,46 @@ const question = {
   isAnsweredCorrectly: false,
 };
 
+const DEFAULT_CHOICE = {
+  question: "",
+  choice: "",
+};
+
 const DEFAULT_QUIZ_STATE = Array.from({ length: 10 }, () => question);
 
-export default function Home() {
-  const [quizSelection, setQuizSelection] = useState({});
-  const [currentChoice, setCurrentChoice] = useState({});
-  const [currentPage, setCurrentPage] = useState(0);
-  const [isSubmissionError, setIsSubmissionError] = useState(false);
-  // const [isOptionChosen, setIsOptionChosen] = useState(false);
-  const [quizState, setQuizState] = useState(DEFAULT_QUIZ_STATE);
-  const currentScore = quizState.reduce((acc, curr) => {
+const calculateScore = (state: any[]): number => {
+  return state.reduce((acc, curr) => {
     const point = curr.isAnsweredCorrectly ? 1 : 0;
     return acc + point;
   }, 0);
+};
+
+export default function Home() {
+  const [activeQuizData, setActiveQuizData] = useState(QUIZ_DATA.quizzes[0]);
+  const [currentChoice, setCurrentChoice] = useState(DEFAULT_CHOICE);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [isSubmissionError, setIsSubmissionError] = useState(false);
+  const [hasAnswerBeenRevealed, setHasAnsweredBeenReleaved] = useState(false);
+  const [quizState, setQuizState] = useState(DEFAULT_QUIZ_STATE);
+
   const isOptionChosen = Object.keys(currentChoice).length !== 0;
+  useEffect(() => {
+    setIsSubmissionError(!isOptionChosen ? true : false);
+  }, [currentChoice]);
 
   // console.log("currentPage", currentPage);
   // console.log("quizSelection", quizSelection);
   // console.log("quizState", quizState);
   console.log("currentChoice", currentChoice);
-  console.log("isEmpty", Object.keys(currentChoice).length === 0);
+  console.log("isSubmissionError", isSubmissionError);
+  // console.log("isEmpty", Object.keys(currentChoice).length === 0);
 
   const handleQuizSelection = (value: string) => {
     const selectedQuizData = QUIZ_DATA.quizzes.filter((quiz) => {
       return quiz.title === value;
     })[0];
 
-    setQuizSelection(selectedQuizData);
+    setActiveQuizData(selectedQuizData);
 
     const newQuizState = selectedQuizData.questions.map((quizQuestion) => {
       return {
@@ -61,15 +74,11 @@ export default function Home() {
     setCurrentPage((prev) => prev + 1);
   };
 
-  const handleMakeChoice = (
-    question: Record<string, string>,
-    choice: string,
-  ) => {
+  const handleMakeChoice = (question: string, choice: string) => {
     setCurrentChoice({
       question,
       choice,
     });
-    // setIsSubmissionError(!isOptionChosen ? true : false);
   };
 
   const handleChooseAnswer = (question: string, choice: string) => {
@@ -92,9 +101,11 @@ export default function Home() {
       return updatedState;
     });
 
-    setCurrentPage((prev) => (!isOptionChosen ? prev : prev + 1));
+    setCurrentPage((prev) =>
+      !isOptionChosen || !hasAnswerBeenRevealed ? prev : prev + 1,
+    );
     // Reset the state
-    setCurrentChoice({});
+    setCurrentChoice(DEFAULT_CHOICE);
     setIsSubmissionError(!isOptionChosen ? true : false);
   };
 
@@ -129,7 +140,7 @@ export default function Home() {
             <Button
               variant="option"
               size="option"
-              startIcon={<IconWrapper iconName="JS" />}
+              startIcon={<IconWrapper iconName="Javascript" />}
               onClick={() => handleQuizSelection("JavaScript")}
             >
               Javascript
@@ -149,14 +160,8 @@ export default function Home() {
         <section className="flex w-full max-w-[1160px] flex-col gap-8">
           <header className="mb-14 flex items-center justify-between">
             <div className="flex items-center gap-6 text-[28px] font-medium">
-              <IconWrapper
-                iconName={
-                  quizSelection?.title === "Javascript"
-                    ? "JS"
-                    : quizSelection?.title
-                }
-              />{" "}
-              <span>{quizSelection?.title}</span>
+              <IconWrapper iconName={activeQuizData?.title} />{" "}
+              <span>{activeQuizData?.title}</span>
             </div>
             <div className="flex items-center gap-1">
               <SunDarkIcon />
@@ -171,17 +176,17 @@ export default function Home() {
                   {`Question ${currentPage} of 10`}
                 </div>
                 <div className="text-4xl font-medium text-fem-dark-navy">
-                  {quizSelection.questions[currentPage - 1].question}
+                  {activeQuizData.questions[currentPage - 1].question}
                 </div>
               </section>
               <Progress value={currentPage * 10} />
             </section>
             <div className="flex w-[564px] flex-col gap-6">
               <ButtonGroup defaultValue="option1">
-                {quizSelection.questions[currentPage - 1].options.map(
+                {activeQuizData.questions[currentPage - 1].options.map(
                   (option, index) => {
                     const currentQuestion =
-                      quizSelection.questions[currentPage - 1].question;
+                      activeQuizData.questions[currentPage - 1].question;
                     return (
                       <ButtonGroupItem
                         key={option}
@@ -235,18 +240,12 @@ export default function Home() {
           <div className="flex w-[564px] flex-col gap-6">
             <div className="flex w-full flex-col items-center gap-10 rounded-3xl bg-fem-pure-white p-12 text-fem-dark-navy shadow-[0px_16px_40px_0px_#8FA0C124]">
               <div className="flex items-center gap-6 text-[28px] font-medium">
-                <IconWrapper
-                  iconName={
-                    quizSelection?.title === "Javascript"
-                      ? "JS"
-                      : quizSelection?.title
-                  }
-                />{" "}
-                <span>{quizSelection?.title}</span>
+                <IconWrapper iconName={activeQuizData?.title} />{" "}
+                <span>{activeQuizData?.title}</span>
               </div>
               <div className="flex flex-col items-center gap-4">
                 <div className="text-[144px] font-medium leading-none">
-                  {currentScore}
+                  {calculateScore(quizState)}
                 </div>
                 <div className="text-[24px] text-fem-grey-navy">out of 10</div>
               </div>
