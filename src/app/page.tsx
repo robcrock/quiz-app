@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { QUIZ_DATA, TQuiz, TQuizzes } from "@/data/data";
-import { IconWrapper } from "@/components/icon-wrapper";
+import { IconWrapper, TIconName } from "@/components/icon-wrapper";
 import { useEffect, useState } from "react";
 import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
 import SunLightIcon from "@/components/icons/SunLightIcon";
@@ -43,16 +43,17 @@ export default function Home() {
   const [hasAnswerBeenRevealed, setHasAnsweredBeenReleaved] = useState(false);
   const [quizState, setQuizState] = useState(DEFAULT_QUIZ_STATE);
 
-  const isOptionChosen = Object.keys(currentChoice).length !== 0;
-  useEffect(() => {
-    setIsSubmissionError(!isOptionChosen ? true : false);
-  }, [currentChoice]);
+  const isOptionChosen =
+    Object.values(currentChoice).filter((option) => option !== "").length !== 0;
+  // useEffect(() => {
+  //   setIsSubmissionError(!isOptionChosen ? true : false);
+  // }, [currentChoice]);
 
   // console.log("currentPage", currentPage);
   // console.log("quizSelection", quizSelection);
   // console.log("quizState", quizState);
-  console.log("currentChoice", currentChoice);
-  console.log("isSubmissionError", isSubmissionError);
+  // console.log("currentChoice", currentChoice);
+  // console.log("isSubmissionError", isSubmissionError);
   // console.log("isEmpty", Object.keys(currentChoice).length === 0);
 
   const handleQuizSelection = (value: string) => {
@@ -69,8 +70,8 @@ export default function Home() {
         answer: quizQuestion.answer,
       };
     });
-    setQuizState(newQuizState);
 
+    setQuizState(newQuizState);
     setCurrentPage((prev) => prev + 1);
   };
 
@@ -79,11 +80,6 @@ export default function Home() {
       question,
       choice,
     });
-  };
-
-  const handleChooseAnswer = (question: string, choice: string) => {
-    console.log("question", question);
-    console.log("choice", choice);
     setQuizState((prevState) => {
       const updatedState = prevState.map((state) => {
         if (state.question === question) {
@@ -100,75 +96,62 @@ export default function Home() {
       console.log("updatedState", updatedState);
       return updatedState;
     });
+    setIsSubmissionError(false);
+  };
 
-    setCurrentPage((prev) =>
-      !isOptionChosen || !hasAnswerBeenRevealed ? prev : prev + 1,
-    );
-    // Reset the state
-    setCurrentChoice(DEFAULT_CHOICE);
-    setIsSubmissionError(!isOptionChosen ? true : false);
+  const handleChooseAnswer = (question: string, choice: string) => {
+    // Is an option chosen?
+    if (!isOptionChosen) {
+      console.log("No option chosen");
+      setIsSubmissionError(true);
+      return;
+    }
+
+    // Has an option been chosen and the answer has not been revealed
+    if (isOptionChosen && !hasAnswerBeenRevealed) {
+      console.log("Option chosen, but answer not revealed");
+      setIsSubmissionError(false);
+      setHasAnsweredBeenReleaved(true);
+      setCurrentPage(currentPage);
+      return;
+    }
+
+    if (isOptionChosen && hasAnswerBeenRevealed) {
+      console.log("Option chosen and answer revealed");
+      setQuizState((prevState) => {
+        const updatedState = prevState.map((state) => {
+          if (state.question === question) {
+            return {
+              ...state,
+              question,
+              choice,
+              isAnsweredCorrectly: state.answer === choice,
+            };
+          } else {
+            return { ...state };
+          }
+        });
+        console.log("updatedState", updatedState);
+        return updatedState;
+      });
+
+      setCurrentPage((prev) => prev + 1);
+
+      // Reset the state
+      setIsSubmissionError(false);
+      setCurrentChoice(DEFAULT_CHOICE);
+      setHasAnsweredBeenReleaved(false);
+    }
   };
 
   return (
     <main className="m-auto flex min-h-screen w-full max-w-[1160px] flex-col items-center justify-center">
       {currentPage === 0 && (
-        <section className="flex w-full justify-between">
-          <section className="flex flex-col gap-12">
-            <section className="flex flex-col gap-0 text-[64px] leading-none text-fem-dark-navy">
-              <div className="font-light">Welcome to the</div>
-              <div className="font-medium">Frontend Quiz!</div>
-            </section>
-            <div className="text-xl italic">Pick a subject to get started.</div>
-          </section>
-          <div className="flex w-[564px] flex-col gap-6">
-            <Button
-              variant="option"
-              size="option"
-              startIcon={<IconWrapper iconName="HTML" />}
-              onClick={() => handleQuizSelection("HTML")}
-            >
-              HTML
-            </Button>
-            <Button
-              variant="option"
-              size="option"
-              startIcon={<IconWrapper iconName="CSS" />}
-              onClick={() => handleQuizSelection("CSS")}
-            >
-              CSS
-            </Button>
-            <Button
-              variant="option"
-              size="option"
-              startIcon={<IconWrapper iconName="Javascript" />}
-              onClick={() => handleQuizSelection("JavaScript")}
-            >
-              Javascript
-            </Button>
-            <Button
-              variant="option"
-              size="option"
-              startIcon={<IconWrapper iconName="Accessibility" />}
-              onClick={() => handleQuizSelection("Accessibility")}
-            >
-              Accessibility
-            </Button>
-          </div>
-        </section>
+        <QuizSelectionPage handleQuizSelection={handleQuizSelection} />
       )}
       {currentPage !== 0 && currentPage !== 10 && (
         <section className="flex w-full max-w-[1160px] flex-col gap-8">
-          <header className="mb-14 flex items-center justify-between">
-            <div className="flex items-center gap-6 text-[28px] font-medium">
-              <IconWrapper iconName={activeQuizData?.title} />{" "}
-              <span>{activeQuizData?.title}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <SunDarkIcon />
-              <Switch />
-              <MoonDarkIcon />
-            </div>
-          </header>
+          <QuestionPageHeader title={activeQuizData?.title} />
           <section className="flex w-full justify-between">
             <section className="flex w-[465px] flex-col justify-between">
               <section className="flex flex-col gap-6">
@@ -187,11 +170,57 @@ export default function Home() {
                   (option, index) => {
                     const currentQuestion =
                       activeQuizData.questions[currentPage - 1].question;
+
+                    const curQuestion = quizState.filter(
+                      (q) => q.question === currentQuestion,
+                    )[0];
+                    console.log(
+                      "isAnsweredCorrectly",
+                      curQuestion.isAnsweredCorrectly,
+                    );
+
+                    // style correctly answered option
+                    let borderColor = "";
+                    if (curQuestion.isAnsweredCorrectly) {
+                      if (option === curQuestion.choice)
+                        borderColor = "border-[3px] border-green";
+                    } else if (!curQuestion.isAnsweredCorrectly) {
+                      if (option === curQuestion.choice)
+                        borderColor = "border-[3px] border-red";
+                    }
+
+                    let bgColor = "";
+                    if (curQuestion.isAnsweredCorrectly) {
+                      if (option === curQuestion.choice) bgColor = "bg-green";
+                    } else if (!curQuestion.isAnsweredCorrectly) {
+                      if (option === curQuestion.choice) bgColor = "bg-red";
+                    }
+
+                    // answered correctly and choice === answer
+                    // - highlight choice
+                    const correctAnswer = curQuestion.answer === option;
+
+                    // answered incorrectly and choice !== answer
+                    // - highlight choice
+                    const incorrectChoice =
+                      !correctAnswer && curQuestion.choice === option;
+
+                    // answered and neither choice nor answer
+                    const neutralOutcome = !correctAnswer && !incorrectChoice;
+
+                    const isOptionCorrect =
+                      curQuestion.isAnsweredCorrectly &&
+                      option === curQuestion.choice;
+
                     return (
                       <ButtonGroupItem
+                        className={borderColor}
                         key={option}
-                        icon={<OptionIcon index={index} />}
+                        icon={<OptionIcon className={bgColor} index={index} />}
                         label={option}
+                        isCorrect={correctAnswer}
+                        isIncorrect={incorrectChoice}
+                        isNeutral={neutralOutcome}
                         value={option}
                         onClick={() =>
                           handleMakeChoice(currentQuestion, option)
@@ -264,7 +293,13 @@ export default function Home() {
   );
 }
 
-const OptionIcon = ({ index }: { index: number }) => {
+const OptionIcon = ({
+  index,
+  className,
+}: {
+  index: number;
+  className: string;
+}) => {
   const letterArray = ["A", "B", "C", "D"];
 
   return (
@@ -272,10 +307,79 @@ const OptionIcon = ({ index }: { index: number }) => {
       className={cn(
         "flex h-14 w-14 items-center justify-center rounded-lg bg-fem-light-grey text-[28px] font-medium text-fem-grey-navy",
         "group-hover:bg-fem-soft-purple group-hover:text-fem-purple",
-        "group-data-[state='checked']:bg-fem-purple group-data-[state='checked']:text-fem-pure-white",
+        `${className !== "" ? className : "group-data-[state='checked']:bg-fem-purple"}`,
+        "group-data-[state='checked']:text-fem-pure-white",
+        className,
       )}
     >
       {letterArray[index]}
     </div>
+  );
+};
+
+type TQuizSelectPageProps = {
+  handleQuizSelection: (name: TIconName) => void;
+};
+
+const QuizSelectionPage = ({ handleQuizSelection }: TQuizSelectPageProps) => {
+  return (
+    <section className="flex w-full justify-between">
+      <section className="flex flex-col gap-12">
+        <section className="flex flex-col gap-0 text-[64px] leading-none text-fem-dark-navy">
+          <div className="font-light">Welcome to the</div>
+          <div className="font-medium">Frontend Quiz!</div>
+        </section>
+        <div className="text-xl italic">Pick a subject to get started.</div>
+      </section>
+      <div className="flex w-[564px] flex-col gap-6">
+        <Button
+          variant="option"
+          size="option"
+          startIcon={<IconWrapper iconName="HTML" />}
+          onClick={() => handleQuizSelection("HTML")}
+        >
+          HTML
+        </Button>
+        <Button
+          variant="option"
+          size="option"
+          startIcon={<IconWrapper iconName="CSS" />}
+          onClick={() => handleQuizSelection("CSS")}
+        >
+          CSS
+        </Button>
+        <Button
+          variant="option"
+          size="option"
+          startIcon={<IconWrapper iconName="JavaScript" />}
+          onClick={() => handleQuizSelection("JavaScript")}
+        >
+          Javascript
+        </Button>
+        <Button
+          variant="option"
+          size="option"
+          startIcon={<IconWrapper iconName="Accessibility" />}
+          onClick={() => handleQuizSelection("Accessibility")}
+        >
+          Accessibility
+        </Button>
+      </div>
+    </section>
+  );
+};
+
+const QuestionPageHeader = ({ title }: Pick<TQuiz, "title">) => {
+  return (
+    <header className="mb-14 flex items-center justify-between">
+      <div className="flex items-center gap-6 text-[28px] font-medium">
+        <IconWrapper iconName={title} /> <span>{title}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <SunDarkIcon />
+        <Switch />
+        <MoonDarkIcon />
+      </div>
+    </header>
   );
 };
