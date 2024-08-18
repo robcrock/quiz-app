@@ -1,23 +1,144 @@
 "use client";
 
-import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { QUIZ_DATA, TQuiz, TQuizzes } from "@/data/data";
+import { QUIZ_DATA, TQuiz } from "@/data/data";
 import { IconWrapper, TIconName } from "@/components/icon-wrapper";
-import { useEffect, useState } from "react";
+import { useReducer } from "react";
 import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
-import SunLightIcon from "@/components/icons/SunLightIcon";
-import MoonLightIcon from "@/components/icons/MoonLightIcon";
-import SunDarkIcon from "@/components/icons/SunDarkIcon";
-import MoonDarkIcon from "@/components/icons/MoonDarkIcon";
 import ErrorIcon from "@/components/icons/ErrorIcon";
 import { cn } from "@/lib/utils";
+
+const DEFAULT_STATE = {
+  currentPage: 0,
+  currentChoice: "",
+  currentAnswer: "",
+  selectedQuiz: "",
+  selectedQuizData: {},
+  currentQuestionData: {},
+  currentQuestion: "",
+  currentOptions: [],
+  isSubmissionError: false,
+  hasChoiceBeenStaged: false,
+  hasAnswerBeenRevealed: false,
+  score: 0,
+};
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case "RESET_STATE":
+      return DEFAULT_STATE;
+    case "STAGE_CHOICE":
+      return {
+        ...state,
+        hasChoiceBeenStaged: true,
+        currentChoice: action.payload.choice,
+      };
+    case "SUBMIT_ANSWER":
+      console.log("page", state.currentPage);
+      if (state.currentPage > 9) {
+        return { ...state };
+      }
+      if (state.hasAnswerBeenRevealed) {
+        const currentQuestionData =
+          state.selectedQuizData.questions[state.currentPage];
+        const updatedCurrentPage = state.currentPage + 1;
+
+        console.log("currentQuestionData", currentQuestionData);
+
+        return {
+          ...state,
+          currentChoice: "",
+          currentQuestion: currentQuestionData.question,
+          currentAnswer: currentQuestionData.answer,
+          currentOptions: currentQuestionData.options,
+          currentPage: updatedCurrentPage,
+          hasChoiceBeenStaged: false,
+          hasAnswerBeenRevealed: false,
+        };
+      } else if (state.hasChoiceBeenStaged) {
+        const isAnsweredCorrectly = state.currentAnswer === state.currentChoice;
+        const updatedOptions = state.currentOptions.map((option) => {
+          console.log("isAnsweredCorrectly", isAnsweredCorrectly);
+          console.log("state.currentChoice", state.currentAnswer);
+          console.log("option", option);
+          if (isAnsweredCorrectly && state.currentChoice === option.option)
+            return { ...option, icon: "correct", highlight: "correct" };
+          if (!isAnsweredCorrectly && state.currentChoice === option.option)
+            return { ...option, icon: "incorrect", highlight: "incorrect" };
+          if (!isAnsweredCorrectly && state.currentAnswer === option.option)
+            return { ...option, icon: "correct", highlight: "neutral" };
+          return { ...option };
+        });
+        return {
+          ...state,
+          hasAnswerBeenRevealed: true,
+          currentOptions: [...updatedOptions],
+          score: isAnsweredCorrectly ? state.score + 1 : state.score,
+        };
+      } else {
+        return {
+          ...state,
+        };
+      }
+    case "SET_QUIZ":
+      return { ...state, selectedQuiz: action.payload.selectedQuiz };
+    case "INCREMENT_PAGE":
+      return { ...state, currentPage: state.currentPage + 1 };
+    case "IS_SUBMISSION_ERROR":
+      return { ...state, isSubmissionError: true };
+    case "IS_NOT_SUBMISSION_ERROR":
+      return { ...state, isSubmissionError: false };
+    case "ANSWER_HAS_BEEN_REVEALED":
+      return { ...state, hasAnswerBeenRevealed: true };
+    case "ANSWER_HAS_NOT_BEEN_REVEALED":
+      return { ...state, hasAnswerBeenRevealed: false };
+    case "SET_QUIZ_DATA":
+      const originalQuizData = TRANSFORMED_QUIZ_DATA.quizzes;
+      const updatedQuizDataArray = originalQuizData.filter(
+        (quiz) => quiz.title === state.selectedQuiz,
+      );
+      const updatedQuizData = updatedQuizDataArray[0];
+      const updatedQuizDataQuestions = updatedQuizData.questions;
+      const currentQuestionData =
+        updatedQuizDataQuestions[state.currentPage - 1];
+
+      return {
+        ...state,
+        currentQuestion: currentQuestionData.question,
+        currentChoice: currentQuestionData.choice,
+        currentAnswer: currentQuestionData.answer,
+        currentOptions: currentQuestionData.options,
+        selectedQuizData: updatedQuizData,
+      };
+    default:
+      return { ...state };
+  }
+};
+
+// Assuming QUIZ_DATA is imported from your data file
+const TRANSFORMED_QUIZ_DATA = {
+  quizzes: QUIZ_DATA.quizzes.map((quiz) => ({
+    ...quiz,
+    questions: quiz.questions.map((question) => ({
+      ...question,
+      options: question.options.map((option) => ({
+        option,
+        icon: "none",
+        highlight: "none",
+      })),
+    })),
+  })),
+};
 
 const question = {
   question: "",
   choice: "",
   answer: "",
+  options: {
+    option: "",
+    result: "neutral",
+  },
   isAnsweredCorrectly: false,
 };
 
@@ -28,202 +149,129 @@ const DEFAULT_CHOICE = {
 
 const DEFAULT_QUIZ_STATE = Array.from({ length: 10 }, () => question);
 
-const calculateScore = (state: any[]): number => {
-  return state.reduce((acc, curr) => {
-    const point = curr.isAnsweredCorrectly ? 1 : 0;
-    return acc + point;
-  }, 0);
-};
-
 export default function Home() {
-  const [activeQuizData, setActiveQuizData] = useState(QUIZ_DATA.quizzes[0]);
-  const [currentChoice, setCurrentChoice] = useState(DEFAULT_CHOICE);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [isSubmissionError, setIsSubmissionError] = useState(false);
-  const [hasAnswerBeenRevealed, setHasAnsweredBeenReleaved] = useState(false);
-  const [quizState, setQuizState] = useState(DEFAULT_QUIZ_STATE);
+  const [state, dispatch] = useReducer(reducer, DEFAULT_STATE);
 
-  const isOptionChosen =
-    Object.values(currentChoice).filter((option) => option !== "").length !== 0;
-  // useEffect(() => {
-  //   setIsSubmissionError(!isOptionChosen ? true : false);
-  // }, [currentChoice]);
-
-  // console.log("currentPage", currentPage);
-  // console.log("quizSelection", quizSelection);
-  // console.log("quizState", quizState);
-  // console.log("currentChoice", currentChoice);
-  // console.log("isSubmissionError", isSubmissionError);
-  // console.log("isEmpty", Object.keys(currentChoice).length === 0);
+  console.log("state", state);
 
   const handleQuizSelection = (value: string) => {
-    const selectedQuizData = QUIZ_DATA.quizzes.filter((quiz) => {
-      return quiz.title === value;
-    })[0];
-
-    setActiveQuizData(selectedQuizData);
-
-    const newQuizState = selectedQuizData.questions.map((quizQuestion) => {
-      return {
-        ...question,
-        question: quizQuestion.question,
-        answer: quizQuestion.answer,
-      };
+    dispatch({
+      type: "SET_QUIZ",
+      payload: { selectedQuiz: value },
     });
-
-    setQuizState(newQuizState);
-    setCurrentPage((prev) => prev + 1);
+    dispatch({
+      type: "INCREMENT_PAGE",
+    });
+    dispatch({
+      type: "SET_QUIZ_DATA",
+    });
   };
 
   const handleMakeChoice = (question: string, choice: string) => {
-    setCurrentChoice({
-      question,
-      choice,
+    dispatch({
+      type: "STAGE_CHOICE",
+      payload: {
+        question,
+        choice,
+      },
     });
-    setQuizState((prevState) => {
-      const updatedState = prevState.map((state) => {
-        if (state.question === question) {
-          return {
-            ...state,
-            question,
-            choice,
-            isAnsweredCorrectly: state.answer === choice,
-          };
-        } else {
-          return { ...state };
-        }
-      });
-      console.log("updatedState", updatedState);
-      return updatedState;
-    });
-    setIsSubmissionError(false);
+
+    dispatch({ type: "IS_NOT_SUBMISSION_ERROR" });
   };
 
   const handleChooseAnswer = (question: string, choice: string) => {
-    // Is an option chosen?
-    if (!isOptionChosen) {
-      console.log("No option chosen");
-      setIsSubmissionError(true);
-      return;
-    }
-
-    // Has an option been chosen and the answer has not been revealed
-    if (isOptionChosen && !hasAnswerBeenRevealed) {
-      console.log("Option chosen, but answer not revealed");
-      setIsSubmissionError(false);
-      setHasAnsweredBeenReleaved(true);
-      setCurrentPage(currentPage);
-      return;
-    }
-
-    if (isOptionChosen && hasAnswerBeenRevealed) {
-      console.log("Option chosen and answer revealed");
-      setQuizState((prevState) => {
-        const updatedState = prevState.map((state) => {
-          if (state.question === question) {
-            return {
-              ...state,
-              question,
-              choice,
-              isAnsweredCorrectly: state.answer === choice,
-            };
-          } else {
-            return { ...state };
-          }
-        });
-        console.log("updatedState", updatedState);
-        return updatedState;
-      });
-
-      setCurrentPage((prev) => prev + 1);
-
-      // Reset the state
-      setIsSubmissionError(false);
-      setCurrentChoice(DEFAULT_CHOICE);
-      setHasAnsweredBeenReleaved(false);
-    }
+    dispatch({ type: "SUBMIT_ANSWER" });
+    // dispatch({ type: "IS_NOT_SUBMISSION_ERROR" });
+    // dispatch({ type: "ANSWER_HAS_BEEN_REVEALED" });
   };
 
   return (
     <main className="m-auto flex min-h-screen w-full max-w-[1160px] flex-col items-center justify-center">
-      {currentPage === 0 && (
+      {state.currentPage === 0 && (
         <QuizSelectionPage handleQuizSelection={handleQuizSelection} />
       )}
-      {currentPage !== 0 && currentPage !== 10 && (
+      {state.currentPage !== 0 && state.currentPage !== 10 && (
         <section className="flex w-full max-w-[1160px] flex-col gap-8">
-          <QuestionPageHeader title={activeQuizData?.title} />
+          <QuestionPageHeader title={state.selectedQuiz} />
           <section className="flex w-full justify-between">
             <section className="flex w-[465px] flex-col justify-between">
               <section className="flex flex-col gap-6">
                 <div className="text-xl italic text-fem-grey-navy">
-                  {`Question ${currentPage} of 10`}
+                  {`Question ${state.currentPage} of 10`}
                 </div>
                 <div className="text-4xl font-medium text-fem-dark-navy">
-                  {activeQuizData.questions[currentPage - 1].question}
+                  {state.currentQuestion}
                 </div>
               </section>
-              <Progress value={currentPage * 10} />
+              <Progress value={state.currentPage * 10} />
             </section>
             <div className="flex w-[564px] flex-col gap-6">
               <ButtonGroup defaultValue="option1">
-                {activeQuizData.questions[currentPage - 1].options.map(
-                  (option, index) => {
-                    const currentQuestion =
-                      activeQuizData.questions[currentPage - 1].question;
-
-                    const curQuestion = quizState.filter(
-                      (q) => q.question === currentQuestion,
-                    )[0];
-                    console.log(
-                      "isAnsweredCorrectly",
-                      curQuestion.isAnsweredCorrectly,
-                    );
-
-                    // style correctly answered option
+                {state.currentOptions.map(
+                  ({ option, icon, highlight }, index) => {
                     let borderColor = "";
-                    if (curQuestion.isAnsweredCorrectly) {
-                      if (option === curQuestion.choice)
+                    if (state.hasAnswerBeenRevealed) {
+                      if (highlight === "correct") {
                         borderColor = "border-[3px] border-green";
-                    } else if (!curQuestion.isAnsweredCorrectly) {
-                      if (option === curQuestion.choice)
+                      } else if (highlight === "incorrect") {
                         borderColor = "border-[3px] border-red";
+                      } else if (state.currentChoice === option) {
+                        borderColor = "border-[3px] border-fem-purple";
+                      } else {
+                        borderColor = "border-[3px] border-none";
+                      }
                     }
 
                     let bgColor = "";
-                    if (curQuestion.isAnsweredCorrectly) {
-                      if (option === curQuestion.choice) bgColor = "bg-green";
-                    } else if (!curQuestion.isAnsweredCorrectly) {
-                      if (option === curQuestion.choice) bgColor = "bg-red";
+                    if (state.hasAnswerBeenRevealed) {
+                      if (highlight === "correct") {
+                        bgColor = "bg-green";
+                      } else if (highlight === "incorrect") {
+                        bgColor = "bg-red";
+                      } else if (state.currentChoice === option) {
+                        bgColor = "bg-fem-purple";
+                      } else {
+                        bgColor = "bg-none";
+                      }
                     }
 
-                    // answered correctly and choice === answer
-                    // - highlight choice
-                    const correctAnswer = curQuestion.answer === option;
-
-                    // answered incorrectly and choice !== answer
-                    // - highlight choice
-                    const incorrectChoice =
-                      !correctAnswer && curQuestion.choice === option;
-
-                    // answered and neither choice nor answer
-                    const neutralOutcome = !correctAnswer && !incorrectChoice;
-
-                    const isOptionCorrect =
-                      curQuestion.isAnsweredCorrectly &&
-                      option === curQuestion.choice;
+                    let hoverColor = "";
+                    if (state.hasAnswerBeenRevealed) {
+                      if (highlight === "correct") {
+                        hoverColor =
+                          "group-hover:bg-fem-green group-hover:text-fem-pure-white";
+                      } else if (highlight === "incorrect") {
+                        hoverColor =
+                          "group-hover:bg-fem-red group-hover:text-fem-pure-white";
+                      } else if (state.currentChoice === option) {
+                        hoverColor =
+                          "group-hover:bg-fem-purple group-hover:text-fem-pure-white";
+                      } else if (state.currentChoice === "") {
+                        hoverColor =
+                          "group-hover:bg-fem-soft-purple group-hover:text-fem-purple";
+                      } else {
+                        hoverColor =
+                          "group-hover:bg-fem-light-grey group-hover:text-fem-grey-navy";
+                      }
+                    }
 
                     return (
                       <ButtonGroupItem
                         className={borderColor}
                         key={option}
-                        icon={<OptionIcon className={bgColor} index={index} />}
+                        icon={
+                          <OptionIcon
+                            className={cn(bgColor, hoverColor)}
+                            index={index}
+                          />
+                        }
                         label={option}
-                        isCorrect={correctAnswer}
-                        isIncorrect={incorrectChoice}
-                        isNeutral={neutralOutcome}
+                        isCorrect={icon === "correct"}
+                        isIncorrect={icon === "incorrect"}
+                        isNeutral={icon === "none"}
                         value={option}
                         onClick={() =>
-                          handleMakeChoice(currentQuestion, option)
+                          handleMakeChoice(state.currentQuestion, option)
                         }
                       />
                     );
@@ -238,15 +286,14 @@ export default function Home() {
                 variant="default"
                 className="w-[564px]"
                 onClick={() =>
-                  handleChooseAnswer(
-                    currentChoice.question,
-                    currentChoice.choice,
-                  )
+                  handleChooseAnswer(state.currentQuestion, state.currentChoice)
                 }
               >
-                {isOptionChosen ? "Next Question" : "Submit Answer"}
+                {state.hasAnswerBeenRevealed
+                  ? "Next Question"
+                  : "Submit Answer"}
               </Button>
-              {isSubmissionError && (
+              {state.isSubmissionError && (
                 <div className="flex items-center gap-2">
                   <ErrorIcon />
                   <span className="text-2xl text-[#EE5454]">
@@ -258,7 +305,7 @@ export default function Home() {
           </div>
         </section>
       )}
-      {currentPage === 10 && (
+      {state.currentPage === 10 && (
         <section className="flex w-full justify-between">
           <section className="flex flex-col gap-12">
             <section className="flex flex-col gap-0 text-[64px] leading-none text-fem-dark-navy">
@@ -269,12 +316,12 @@ export default function Home() {
           <div className="flex w-[564px] flex-col gap-6">
             <div className="flex w-full flex-col items-center gap-10 rounded-3xl bg-fem-pure-white p-12 text-fem-dark-navy shadow-[0px_16px_40px_0px_#8FA0C124]">
               <div className="flex items-center gap-6 text-[28px] font-medium">
-                <IconWrapper iconName={activeQuizData?.title} />{" "}
-                <span>{activeQuizData?.title}</span>
+                <IconWrapper iconName={state.selectedQuiz} />{" "}
+                <span>{state.selectedQuiz}</span>
               </div>
               <div className="flex flex-col items-center gap-4">
                 <div className="text-[144px] font-medium leading-none">
-                  {calculateScore(quizState)}
+                  {state.score}
                 </div>
                 <div className="text-[24px] text-fem-grey-navy">out of 10</div>
               </div>
@@ -282,7 +329,7 @@ export default function Home() {
             <Button
               variant="default"
               className="w-[564px]"
-              onClick={() => setCurrentPage(0)}
+              onClick={() => dispatch({ type: "RESET_STATE" })}
             >
               Play Again
             </Button>
@@ -298,7 +345,7 @@ const OptionIcon = ({
   className,
 }: {
   index: number;
-  className: string;
+  className?: string;
 }) => {
   const letterArray = ["A", "B", "C", "D"];
 
@@ -306,8 +353,8 @@ const OptionIcon = ({
     <div
       className={cn(
         "flex h-14 w-14 items-center justify-center rounded-lg bg-fem-light-grey text-[28px] font-medium text-fem-grey-navy",
-        "group-hover:bg-fem-soft-purple group-hover:text-fem-purple",
         `${className !== "" ? className : "group-data-[state='checked']:bg-fem-purple"}`,
+        `${className !== "" ? className : "group-hover:bg-fem-soft-purple group-hover:text-fem-purple"}`,
         "group-data-[state='checked']:text-fem-pure-white",
         className,
       )}
@@ -371,14 +418,9 @@ const QuizSelectionPage = ({ handleQuizSelection }: TQuizSelectPageProps) => {
 
 const QuestionPageHeader = ({ title }: Pick<TQuiz, "title">) => {
   return (
-    <header className="mb-14 flex items-center justify-between">
+    <header className="mb-14 flex items-center justify-start">
       <div className="flex items-center gap-6 text-[28px] font-medium">
         <IconWrapper iconName={title} /> <span>{title}</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <SunDarkIcon />
-        <Switch />
-        <MoonDarkIcon />
       </div>
     </header>
   );

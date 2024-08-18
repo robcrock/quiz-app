@@ -120,3 +120,29 @@ Use this section to outline areas that you want to continue focusing on in futur
 This is where you can give a hat tip to anyone who helped you out on this project. Perhaps you worked in a team or got some inspiration from someone else's solution. This is the perfect place to give them some credit.
 
 **Note: Delete this note and edit this section's content as necessary. If you completed this challenge by yourself, feel free to delete this section entirely.**
+
+<!-- Transfer to useReducer -->
+
+-- initialize the dataset
+-- set the page number 0
+
+-- choose the quiz
+-- -- this will filter the dataset
+-- -- set the page number to 1
+
+-- make a selection
+-- -- sets the border and highlight of the selected option and removes the hover state
+-- -- hover states of the other options should still be in tact
+
+-- make a submit
+-- -- set the highlight and border of correct if selected
+-- -- set the highlight and border of incorrect if selected and icon of correct
+-- -- knocks out the hover states
+-- -- knocks out the ability of users to select an option
+
+-- got to the next
+-- -- increments the page number
+
+-- start over
+-- set the page number 0
+-- reset the state
