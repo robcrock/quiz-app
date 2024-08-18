@@ -2,87 +2,129 @@
 
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { QUIZ_DATA, TQuiz } from "@/data/data";
+import { TRANSFORMED_QUIZ_DATA } from "@/data/data";
 import { IconWrapper, TIconName } from "@/components/icon-wrapper";
 import { useReducer } from "react";
 import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
 import ErrorIcon from "@/components/icons/ErrorIcon";
 import { cn } from "@/lib/utils";
+import { QuizSelectionPage } from "@/components/pages/quiz-selection-page";
+import { QuizCompletedPage } from "@/components/pages/quiz-completed-page";
 
-const DEFAULT_STATE = {
-  currentPage: 0,
-  currentChoice: "",
-  currentAnswer: "",
-  selectedQuiz: "",
-  selectedQuizData: {},
-  currentQuestionData: {},
-  currentQuestion: "",
-  currentOptions: [],
-  isSubmissionError: false,
-  hasChoiceBeenStaged: false,
-  hasAnswerBeenRevealed: false,
-  score: 0,
+// Define the State type
+type TOption = {
+  option: string;
+  icon?: string;
+  highlight?: string;
 };
 
-const reducer = (state, action) => {
+type TQuestionData = {
+  question: string;
+  answer: string;
+  options: TOption[];
+};
+
+type TSelectedQuizData = {
+  icon: string;
+  questions: TQuestionData[];
+};
+
+export type TState = {
+  currentPage: number;
+  hasChoiceBeenStaged: boolean;
+  currentChoice: string;
+  currentQuestion: string;
+  currentAnswer: string;
+  currentOptions: TOption[];
+  hasAnswerBeenRevealed: boolean;
+  score: number;
+  selectedQuiz: TIconName | "";
+  selectedQuizData: TSelectedQuizData;
+  isSubmissionError: boolean;
+};
+
+// Define the Action type
+export type TAction =
+  | { type: "RESET_STATE" }
+  | { type: "SET_CHOICE"; payload: { choice: string } }
+  | { type: "SUBMIT_ANSWER" }
+  | { type: "SET_QUIZ"; payload: { selectedQuiz: TIconName } }
+  | { type: "SET_CURRENT_DATA" }
+  | { type: "INCREMENT_PAGE" }
+  | { type: "IS_SUBMISSION_ERROR" }
+  | { type: "IS_NOT_SUBMISSION_ERROR" }
+  | { type: "CHOICE_HAS_BEEN_STAGED" }
+  | { type: "CHOICE_HAS_NOT_BEEN_STAGED" }
+  | { type: "ANSWER_HAS_BEEN_REVEALED" }
+  | { type: "ANSWER_HAS_NOT_BEEN_REVEALED" }
+  | { type: "SET_QUIZ_DATA" };
+
+console.log("TRANSFORMED_QUIZ_DATA", TRANSFORMED_QUIZ_DATA);
+// Define the initial state
+const DEFAULT_STATE: TState = {
+  currentPage: 0,
+  hasChoiceBeenStaged: false,
+  currentChoice: "",
+  currentQuestion: "",
+  currentAnswer: "",
+  currentOptions: [],
+  hasAnswerBeenRevealed: false,
+  score: 0,
+  selectedQuiz: "",
+  selectedQuizData: {
+    icon: "",
+    questions: [],
+  },
+  isSubmissionError: false,
+};
+
+const reducer = (state: TState, action: TAction): TState => {
   switch (action.type) {
-    case "RESET_STATE":
-      return DEFAULT_STATE;
-    case "STAGE_CHOICE":
-      return {
-        ...state,
-        hasChoiceBeenStaged: true,
-        currentChoice: action.payload.choice,
-      };
-    case "SUBMIT_ANSWER":
-      console.log("page", state.currentPage);
-      if (state.currentPage > 9) {
-        return { ...state };
-      }
-      if (state.hasAnswerBeenRevealed) {
-        const currentQuestionData =
-          state.selectedQuizData.questions[state.currentPage];
-        const updatedCurrentPage = state.currentPage + 1;
-
-        console.log("currentQuestionData", currentQuestionData);
-
-        return {
-          ...state,
-          currentChoice: "",
-          currentQuestion: currentQuestionData.question,
-          currentAnswer: currentQuestionData.answer,
-          currentOptions: currentQuestionData.options,
-          currentPage: updatedCurrentPage,
-          hasChoiceBeenStaged: false,
-          hasAnswerBeenRevealed: false,
-        };
-      } else if (state.hasChoiceBeenStaged) {
-        const isAnsweredCorrectly = state.currentAnswer === state.currentChoice;
-        const updatedOptions = state.currentOptions.map((option) => {
-          console.log("isAnsweredCorrectly", isAnsweredCorrectly);
-          console.log("state.currentChoice", state.currentAnswer);
-          console.log("option", option);
-          if (isAnsweredCorrectly && state.currentChoice === option.option)
-            return { ...option, icon: "correct", highlight: "correct" };
-          if (!isAnsweredCorrectly && state.currentChoice === option.option)
-            return { ...option, icon: "incorrect", highlight: "incorrect" };
-          if (!isAnsweredCorrectly && state.currentAnswer === option.option)
-            return { ...option, icon: "correct", highlight: "neutral" };
-          return { ...option };
-        });
-        return {
-          ...state,
-          hasAnswerBeenRevealed: true,
-          currentOptions: [...updatedOptions],
-          score: isAnsweredCorrectly ? state.score + 1 : state.score,
-        };
-      } else {
-        return {
-          ...state,
-        };
-      }
     case "SET_QUIZ":
       return { ...state, selectedQuiz: action.payload.selectedQuiz };
+    case "SET_QUIZ_DATA":
+      const selectedQuizData = TRANSFORMED_QUIZ_DATA.quizzes.filter(
+        (quiz) => quiz.title === state.selectedQuiz,
+      )[0];
+      return {
+        ...state,
+        selectedQuizData,
+      };
+    case "RESET_STATE":
+      return DEFAULT_STATE;
+    case "CHOICE_HAS_BEEN_STAGED":
+      return { ...state, hasChoiceBeenStaged: true };
+    case "CHOICE_HAS_NOT_BEEN_STAGED":
+      return { ...state, hasChoiceBeenStaged: false };
+    case "SET_CHOICE":
+      return { ...state, currentChoice: action.payload.choice };
+    case "SET_CURRENT_DATA":
+      const currentQuestionData =
+        state.selectedQuizData.questions[state.currentPage];
+
+      return {
+        ...state,
+        currentChoice: "",
+        currentQuestion: currentQuestionData.question,
+        currentAnswer: currentQuestionData.answer,
+        currentOptions: currentQuestionData.options,
+      };
+    case "SUBMIT_ANSWER":
+      const isAnsweredCorrectly = state.currentAnswer === state.currentChoice;
+      const updatedOptions = state.currentOptions.map((option) => {
+        if (isAnsweredCorrectly && state.currentChoice === option.option)
+          return { ...option, icon: "correct", highlight: "correct" };
+        if (!isAnsweredCorrectly && state.currentChoice === option.option)
+          return { ...option, icon: "incorrect", highlight: "incorrect" };
+        if (!isAnsweredCorrectly && state.currentAnswer === option.option)
+          return { ...option, icon: "correct", highlight: "neutral" };
+        return { ...option };
+      });
+      return {
+        ...state,
+        currentOptions: [...updatedOptions],
+        score: isAnsweredCorrectly ? state.score + 1 : state.score,
+      };
     case "INCREMENT_PAGE":
       return { ...state, currentPage: state.currentPage + 1 };
     case "IS_SUBMISSION_ERROR":
@@ -93,96 +135,58 @@ const reducer = (state, action) => {
       return { ...state, hasAnswerBeenRevealed: true };
     case "ANSWER_HAS_NOT_BEEN_REVEALED":
       return { ...state, hasAnswerBeenRevealed: false };
-    case "SET_QUIZ_DATA":
-      const originalQuizData = TRANSFORMED_QUIZ_DATA.quizzes;
-      const updatedQuizDataArray = originalQuizData.filter(
-        (quiz) => quiz.title === state.selectedQuiz,
-      );
-      const updatedQuizData = updatedQuizDataArray[0];
-      const updatedQuizDataQuestions = updatedQuizData.questions;
-      const currentQuestionData =
-        updatedQuizDataQuestions[state.currentPage - 1];
-
-      return {
-        ...state,
-        currentQuestion: currentQuestionData.question,
-        currentChoice: currentQuestionData.choice,
-        currentAnswer: currentQuestionData.answer,
-        currentOptions: currentQuestionData.options,
-        selectedQuizData: updatedQuizData,
-      };
     default:
       return { ...state };
   }
 };
-
-// Assuming QUIZ_DATA is imported from your data file
-const TRANSFORMED_QUIZ_DATA = {
-  quizzes: QUIZ_DATA.quizzes.map((quiz) => ({
-    ...quiz,
-    questions: quiz.questions.map((question) => ({
-      ...question,
-      options: question.options.map((option) => ({
-        option,
-        icon: "none",
-        highlight: "none",
-      })),
-    })),
-  })),
-};
-
-const question = {
-  question: "",
-  choice: "",
-  answer: "",
-  options: {
-    option: "",
-    result: "neutral",
-  },
-  isAnsweredCorrectly: false,
-};
-
-const DEFAULT_CHOICE = {
-  question: "",
-  choice: "",
-};
-
-const DEFAULT_QUIZ_STATE = Array.from({ length: 10 }, () => question);
 
 export default function Home() {
   const [state, dispatch] = useReducer(reducer, DEFAULT_STATE);
 
   console.log("state", state);
 
-  const handleQuizSelection = (value: string) => {
-    dispatch({
-      type: "SET_QUIZ",
-      payload: { selectedQuiz: value },
-    });
-    dispatch({
-      type: "INCREMENT_PAGE",
-    });
-    dispatch({
-      type: "SET_QUIZ_DATA",
-    });
+  const handleQuizSelection = (value: TIconName) => {
+    dispatch({ type: "SET_QUIZ", payload: { selectedQuiz: value } });
+    dispatch({ type: "SET_QUIZ_DATA" });
+    dispatch({ type: "INCREMENT_PAGE" });
+    dispatch({ type: "SET_CURRENT_DATA" });
   };
 
-  const handleMakeChoice = (question: string, choice: string) => {
-    dispatch({
-      type: "STAGE_CHOICE",
-      payload: {
-        question,
-        choice,
-      },
-    });
-
+  const handleMakeChoice = (choice: string) => {
+    dispatch({ type: "CHOICE_HAS_BEEN_STAGED" });
     dispatch({ type: "IS_NOT_SUBMISSION_ERROR" });
+    dispatch({ type: "SET_CHOICE", payload: { choice } });
   };
 
-  const handleChooseAnswer = (question: string, choice: string) => {
-    dispatch({ type: "SUBMIT_ANSWER" });
-    // dispatch({ type: "IS_NOT_SUBMISSION_ERROR" });
-    // dispatch({ type: "ANSWER_HAS_BEEN_REVEALED" });
+  const handleChooseAnswer = () => {
+    if (state.currentPage >= 9) {
+      dispatch({ type: "INCREMENT_PAGE" });
+      return;
+    }
+    if (!state.hasChoiceBeenStaged) {
+      dispatch({ type: "IS_SUBMISSION_ERROR" });
+      return;
+    }
+
+    if (!state.isSubmissionError) {
+      if (state.currentPage >= 1 && state.currentPage <= 9) {
+        console.log("CURRENT PAGE", state.currentPage);
+        if (state.hasAnswerBeenRevealed) {
+          // Update the data to the next question
+          dispatch({ type: "INCREMENT_PAGE" });
+          dispatch({ type: "SET_CURRENT_DATA" });
+
+          // Reset the flags for the next question
+          dispatch({ type: "CHOICE_HAS_NOT_BEEN_STAGED" });
+          dispatch({ type: "ANSWER_HAS_NOT_BEEN_REVEALED" });
+          dispatch({ type: "IS_NOT_SUBMISSION_ERROR" });
+        } else {
+          // Reveal the answer
+          dispatch({ type: "SUBMIT_ANSWER" });
+          dispatch({ type: "ANSWER_HAS_BEEN_REVEALED" });
+        }
+      }
+    }
   };
 
   return (
@@ -270,9 +274,7 @@ export default function Home() {
                         isIncorrect={icon === "incorrect"}
                         isNeutral={icon === "none"}
                         value={option}
-                        onClick={() =>
-                          handleMakeChoice(state.currentQuestion, option)
-                        }
+                        onClick={() => handleMakeChoice(option)}
                       />
                     );
                   },
@@ -285,9 +287,7 @@ export default function Home() {
               <Button
                 variant="default"
                 className="w-[564px]"
-                onClick={() =>
-                  handleChooseAnswer(state.currentQuestion, state.currentChoice)
-                }
+                onClick={() => handleChooseAnswer()}
               >
                 {state.hasAnswerBeenRevealed
                   ? "Next Question"
@@ -306,35 +306,7 @@ export default function Home() {
         </section>
       )}
       {state.currentPage === 10 && (
-        <section className="flex w-full justify-between">
-          <section className="flex flex-col gap-12">
-            <section className="flex flex-col gap-0 text-[64px] leading-none text-fem-dark-navy">
-              <div className="font-light">Quiz completed</div>
-              <div className="font-medium">You scored...</div>
-            </section>
-          </section>
-          <div className="flex w-[564px] flex-col gap-6">
-            <div className="flex w-full flex-col items-center gap-10 rounded-3xl bg-fem-pure-white p-12 text-fem-dark-navy shadow-[0px_16px_40px_0px_#8FA0C124]">
-              <div className="flex items-center gap-6 text-[28px] font-medium">
-                <IconWrapper iconName={state.selectedQuiz} />{" "}
-                <span>{state.selectedQuiz}</span>
-              </div>
-              <div className="flex flex-col items-center gap-4">
-                <div className="text-[144px] font-medium leading-none">
-                  {state.score}
-                </div>
-                <div className="text-[24px] text-fem-grey-navy">out of 10</div>
-              </div>
-            </div>
-            <Button
-              variant="default"
-              className="w-[564px]"
-              onClick={() => dispatch({ type: "RESET_STATE" })}
-            >
-              Play Again
-            </Button>
-          </div>
-        </section>
+        <QuizCompletedPage state={state} dispatch={dispatch} />
       )}
     </main>
   );
@@ -364,59 +336,7 @@ const OptionIcon = ({
   );
 };
 
-type TQuizSelectPageProps = {
-  handleQuizSelection: (name: TIconName) => void;
-};
-
-const QuizSelectionPage = ({ handleQuizSelection }: TQuizSelectPageProps) => {
-  return (
-    <section className="flex w-full justify-between">
-      <section className="flex flex-col gap-12">
-        <section className="flex flex-col gap-0 text-[64px] leading-none text-fem-dark-navy">
-          <div className="font-light">Welcome to the</div>
-          <div className="font-medium">Frontend Quiz!</div>
-        </section>
-        <div className="text-xl italic">Pick a subject to get started.</div>
-      </section>
-      <div className="flex w-[564px] flex-col gap-6">
-        <Button
-          variant="option"
-          size="option"
-          startIcon={<IconWrapper iconName="HTML" />}
-          onClick={() => handleQuizSelection("HTML")}
-        >
-          HTML
-        </Button>
-        <Button
-          variant="option"
-          size="option"
-          startIcon={<IconWrapper iconName="CSS" />}
-          onClick={() => handleQuizSelection("CSS")}
-        >
-          CSS
-        </Button>
-        <Button
-          variant="option"
-          size="option"
-          startIcon={<IconWrapper iconName="JavaScript" />}
-          onClick={() => handleQuizSelection("JavaScript")}
-        >
-          Javascript
-        </Button>
-        <Button
-          variant="option"
-          size="option"
-          startIcon={<IconWrapper iconName="Accessibility" />}
-          onClick={() => handleQuizSelection("Accessibility")}
-        >
-          Accessibility
-        </Button>
-      </div>
-    </section>
-  );
-};
-
-const QuestionPageHeader = ({ title }: Pick<TQuiz, "title">) => {
+const QuestionPageHeader = ({ title }: { title: TIconName }) => {
   return (
     <header className="mb-14 flex items-center justify-start">
       <div className="flex items-center gap-6 text-[28px] font-medium">

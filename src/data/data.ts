@@ -6,17 +6,17 @@ type TQuestion = {
   answer: string;
 };
 
-export type TQuiz = {
+type TQuiz = {
   title: TIconName;
   icon: string;
   questions: TQuestion[];
 };
 
-export type TQuizzes = {
+type TQuizzes = {
   quizzes: TQuiz[];
 };
 
-export const QUIZ_DATA: TQuizzes = {
+const QUIZ_DATA: TQuizzes = {
   quizzes: [
     {
       title: "HTML",
@@ -380,4 +380,40 @@ export const QUIZ_DATA: TQuizzes = {
       ],
     },
   ],
+};
+
+type TTransformedOption = {
+  option: string; // Original option string
+  icon: string;
+  highlight: string;
+};
+
+type TTransformedQuestion = {
+  question: string;
+  options: TTransformedOption[]; // Transformed options as an array of objects
+  answer: string;
+};
+
+type TTransformedQuiz = {
+  title: TIconName;
+  icon: string;
+  questions: TTransformedQuestion[];
+};
+
+type TTransformedQuizzes = {
+  quizzes: TTransformedQuiz[];
+};
+
+export const TRANSFORMED_QUIZ_DATA: TTransformedQuizzes = {
+  quizzes: QUIZ_DATA.quizzes.map((quiz) => ({
+    ...quiz,
+    questions: quiz.questions.map((question) => ({
+      ...question,
+      options: question.options.map((option) => ({
+        option,
+        icon: "none",
+        highlight: "none",
+      })),
+    })),
+  })),
 };

@@ -5,13 +5,14 @@ import HTMLIcon from "@/components/icons/HTMLIcon";
 import JSIcon from "@/components/icons/JSIcon";
 import AccessibilityIcon from "@/components/icons/AccessibilityIcon";
 
-export type TIconName = "CSS" | "HTML" | "JavaScript" | "Accessibility";
+export type TIconName = "CSS" | "HTML" | "JavaScript" | "Accessibility" | "";
 
 const iconMap: Record<TIconName, ElementType> = {
   CSS: CSSIcon,
   HTML: HTMLIcon,
   JavaScript: JSIcon,
   Accessibility: AccessibilityIcon,
+  "": AccessibilityIcon,
 };
 
 const bgMap = {
@@ -19,6 +20,7 @@ const bgMap = {
   CSS: "bg-fem-soft-green",
   JavaScript: "bg-fem-soft-blue",
   Accessibility: "bg-fem-soft-purple",
+  "": "bg-fem-pure-white",
 };
 
 const textMap = {
@@ -26,6 +28,7 @@ const textMap = {
   CSS: "text-fem-green",
   JavaScript: "text-fem-blue",
   Accessibility: "text-fem-purple",
+  "": "text-fem-pure-white",
 };
 
 export const IconWrapper = ({ iconName }: { iconName: TIconName }) => {
